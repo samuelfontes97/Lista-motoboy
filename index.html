@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2196f3">
+  <link rel="icon" href="icon/192.png" type="image/png">
+  <title>Saga List Motoboy</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f4f4f4;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    form input,
+    form button {
+      padding: 10px;
+      margin: 5px;
+    }
+
+    #entregas {
+      margin-top: 20px;
+    }
+
+    .entrega {
+      background: white;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-left: 5px solid #2196f3;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .entrega.concluida {
+      border-left-color: #4caf50;
+      text-decoration: line-through;
+      opacity: 0.6;
+    }
+
+    .botoes-acao {
+      margin-top: 10px;
+      display: flex;
+      gap: 10px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>Lista de Entregas - Motoboy</h1>
+
+  <form id="formEntrega">
+    <input type="date" id="data" required>
+    <input type="time" id="hora" required>
+    <input type="number" id="valor" placeholder="Valor da entrega (R$)" required step="0.01">
+    <button type="submit">Adicionar Entrega</button>
+  </form>
+
+  <div class="botoes-acao">
+    <button onclick="limparConcluidas()">Limpar Concluídas</button>
+    <button onclick="exportarPDF()">Exportar PDF</button>
+  </div>
+
+  <div id="entregas"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script>
+    const form = document.getElementById('formEntrega');
+    const entregasDiv = document.getElementById('entregas');
+    let entregas = JSON.parse(localStorage.getItem('entregas')) || [];
+
+    function salvarEntregas() {
+      localStorage.setItem('entregas', JSON.stringify(entregas));
+    }
+
+    function renderizarEntregas() {
+      entregasDiv.innerHTML = '';
+      entregas.forEach((entrega, index) => {
+        const entregaDiv = document.createElement('div');
+        entregaDiv.className = 'entrega' + (entrega.concluida ? ' concluida' : '');
+        entregaDiv.innerHTML = `
+          <div>
+            <strong>Data:</strong> ${entrega.data} <br>
+            <strong>Hora:</strong> ${entrega.hora} <br>
+            <strong>Valor:</strong> R$ ${entrega.valor}
+          </div>
+          <button onclick="toggleConcluida(${index})">Concluir</button>
+        `;
+        entregasDiv.appendChild(entregaDiv);
+      });
+    }
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      const data = document.getElementById('data').value;
+      const hora = document.getElementById('hora').value;
+      const valor = parseFloat(document.getElementById('valor').value).toFixed(2);
+
+      entregas.push({ data, hora, valor, concluida: false });
+      salvarEntregas();
+      renderizarEntregas();
+      form.reset();
+    });
+
+    function toggleConcluida(index) {
+      entregas[index].concluida = !entregas[index].concluida;
+      salvarEntregas();
+      renderizarEntregas();
+    }
+
+    function limparConcluidas() {
+      entregas = entregas.filter(entrega => !entrega.concluida);
+      salvarEntregas();
+      renderizarEntregas();
+    }
+
+    async function exportarPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      doc.setFontSize(16);
+      doc.text("Lista de Entregas - Motoboy", 10, 10);
+
+      let y = 20;
+      entregas.forEach((entrega, i) => {
+        doc.setFontSize(12);
+        doc.text(`${i + 1}. Data: ${entrega.data}, Hora: ${entrega.hora}, Valor: R$ ${entrega.valor}, ${entrega.concluida ? 'Concluída' : 'Pendente'}`, 10, y);
+        y += 10;
+      });
+
+      doc.save("lista-entregas.pdf");
+    }
+
+    // Inicializa a lista ao abrir a página
+    renderizarEntregas();
+  </script>
+
+  <!-- Registro do service worker -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js')
+        .then(() => console.log('Service Worker registrado!'));
+    }
+  </script>
+
+  <!-- Botão de instalação PWA -->
+  <script>
+    let deferredPrompt;
+    const instalarBtn = document.createElement('button');
+    instalarBtn.textContent = 'Baixar App';
+    instalarBtn.style.display = 'none';
+    instalarBtn.style.padding = '10px';
+    instalarBtn.style.marginTop = '10px';
+    instalarBtn.style.background = '#2196f3';
+    instalarBtn.style.color = 'white';
+    instalarBtn.style.border = 'none';
+    instalarBtn.style.borderRadius = '5px';
+
+    document.body.appendChild(instalarBtn);
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      instalarBtn.style.display = 'inline-block';
+    });
+
+    instalarBtn.addEventListener('click', () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+          if (choiceResult.outcome === 'accepted') {
+            console.log('Usuário aceitou instalar');
+          } else {
+            console.log('Usuário recusou instalar');
+          }
+          deferredPrompt = null;
+        });
+      }
+    });
+  </script>
+
+</body>
+
+</html>
