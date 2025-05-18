@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="style.css">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#2196f3">
-  <link rel="icon" href="icon/192.png" type="image/png">
+  <link rel="icon" href="icone/ChatGPT Image 17 de mai. de 2025, 12_20_16.png" type="image/png">
   <title>Saga List Motoboy</title>
   <style>
     body {
@@ -59,18 +59,20 @@
   <h1>Lista de Entregas - Motoboy</h1>
 
   <form id="formEntrega">
-    <input type="date" id="data" required>
-    <input type="time" id="hora" required>
     <input type="number" id="valor" placeholder="Valor da entrega (R$)" required step="0.01">
     <button type="submit">Adicionar Entrega</button>
   </form>
 
   <div class="botoes-acao">
-    <button onclick="limparConcluidas()">Limpar Concluídas</button>
-    <button onclick="exportarPDF()">Exportar PDF</button>
+    <div class="botoes-acao"></div>
   </div>
 
   <div id="entregas"></div>
+  <button id="mostrarHistorico" style="margin-top:30px;">Mostrar Histórico Mensal</button>
+  <div id="historicoMensal" style="margin-top:30px; display:none;"></div>
+  <div id="total" style="margin-top:15px; font-weight:bold;"></div>
+  <button id="baixarTotal" style="display:block; margin-top:10px;">Baixar Total</button>
+
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script>
@@ -85,25 +87,28 @@
     function renderizarEntregas() {
       entregasDiv.innerHTML = '';
       entregas.forEach((entrega, index) => {
-        const entregaDiv = document.createElement('div');
-        entregaDiv.className = 'entrega' + (entrega.concluida ? ' concluida' : '');
-        entregaDiv.innerHTML = `
-          <div>
-            <strong>Data:</strong> ${entrega.data} <br>
-            <strong>Hora:</strong> ${entrega.hora} <br>
-            <strong>Valor:</strong> R$ ${entrega.valor}
-          </div>
-          <button onclick="toggleConcluida(${index})">Concluir</button>
-        `;
-        entregasDiv.appendChild(entregaDiv);
+        const div = document.createElement('div');
+        div.className = 'entrega' + (entrega.concluida ? ' concluida' : '');
+        div.innerHTML = `
+      <span>
+        Data: ${entrega.data} |
+        Hora: ${entrega.hora} |
+        Valor: R$ ${entrega.valor}
+      </span>
+    `;
+        entregasDiv.appendChild(div);
       });
+      // Atualiza o total na tela
+      const total = entregas.filter(e => !e.concluida).reduce((acc, e) => acc + parseFloat(e.valor), 0);
+      document.getElementById('total').textContent = 'Total: R$ ' + total.toFixed(2);
     }
 
     form.addEventListener('submit', function (e) {
       e.preventDefault();
 
-      const data = document.getElementById('data').value;
-      const hora = document.getElementById('hora').value;
+      const agora = new Date();
+      const data = agora.toLocaleDateString();
+      const hora = agora.toLocaleTimeString();
       const valor = parseFloat(document.getElementById('valor').value).toFixed(2);
 
       entregas.push({ data, hora, valor, concluida: false });
@@ -111,38 +116,6 @@
       renderizarEntregas();
       form.reset();
     });
-
-    function toggleConcluida(index) {
-      entregas[index].concluida = !entregas[index].concluida;
-      salvarEntregas();
-      renderizarEntregas();
-    }
-
-    function limparConcluidas() {
-      entregas = entregas.filter(entrega => !entrega.concluida);
-      salvarEntregas();
-      renderizarEntregas();
-    }
-
-    async function exportarPDF() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-
-      doc.setFontSize(16);
-      doc.text("Lista de Entregas - Motoboy", 10, 10);
-
-      let y = 20;
-      entregas.forEach((entrega, i) => {
-        doc.setFontSize(12);
-        doc.text(`${i + 1}. Data: ${entrega.data}, Hora: ${entrega.hora}, Valor: R$ ${entrega.valor}, ${entrega.concluida ? 'Concluída' : 'Pendente'}`, 10, y);
-        y += 10;
-      });
-
-      doc.save("lista-entregas.pdf");
-    }
-
-    // Inicializa a lista ao abrir a página
-    renderizarEntregas();
   </script>
 
   <!-- Registro do service worker -->
@@ -155,6 +128,54 @@
 
   <!-- Botão de instalação PWA -->
   <script>
+    renderizarHistoricoMensal();
+   function renderizarHistoricoMensal() {
+  const historicoDiv = document.getElementById('historicoMensal');
+  if (!historicoDiv) return;
+
+  // Agrupa entregas por mês/ano
+  const agrupado = {};
+  entregas.forEach(entrega => {
+    const [dia, mes, ano] = entrega.data.split('/');
+    const chave = `${mes}/${ano}`;
+    if (!agrupado[chave]) agrupado[chave] = [];
+    agrupado[chave].push(entrega);
+  });
+
+  let html = '<h2>Histórico Mensal</h2>';
+  Object.keys(agrupado).sort((a, b) => {
+    // Ordena do mais recente para o mais antigo
+    const [mA, yA] = a.split('/').map(Number);
+    const [mB, yB] = b.split('/').map(Number);
+    return yB - yA || mB - mA;
+  }).forEach(mesAno => {
+    const lista = agrupado[mesAno];
+    const totalMes = lista.reduce((acc, e) => acc + parseFloat(e.valor), 0);
+    html += `<div style="margin-bottom:15px;">
+      <strong>${mesAno}</strong> - Total: R$ ${totalMes.toFixed(2)}
+      <ul style="margin:5px 0 0 15px;">` +
+      lista.map(e => `<li>Dia ${e.data.split('/')[0]} - Valor: R$ ${e.valor}</li>`).join('') +
+      `</ul>
+    </div>`;
+  });
+
+  historicoDiv.innerHTML = html;
+}
+
+// Listener do botão FORA da função!
+document.getElementById('mostrarHistorico').addEventListener('click', function () {
+  const historicoDiv = document.getElementById('historicoMensal');
+  if (historicoDiv.style.display === 'none') {
+    renderizarHistoricoMensal(); // Sempre atualiza ao mostrar!
+    historicoDiv.style.display = 'block';
+    this.textContent = 'Ocultar Histórico Mensal';
+  } else {
+    historicoDiv.style.display = 'none';
+    this.textContent = 'Mostrar Histórico Mensal';
+  }
+});
+
+   
     let deferredPrompt;
     const instalarBtn = document.createElement('button');
     instalarBtn.textContent = 'Baixar App';
@@ -186,6 +207,63 @@
           deferredPrompt = null;
         });
       }
+    });
+
+    document.getElementById('baixarTotal').addEventListener('click', function () {
+      const { jsPDF } = window.jspdf;
+      let total = 0;
+      const doc = new jsPDF();
+      doc.setFontSize(16);
+      doc.text("Lista de Entregas - Motoboy", 10, 10);
+
+      let y = 20;
+
+      // Ordena as entregas pelo valor (do maior para o menor)
+      const entregasOrdenadas = [...entregas].sort((a, b) => parseFloat(b.valor) - parseFloat(a.valor));
+
+      // Conta quantas entregas para cada valor
+      const contagemPorValor = {};
+      entregasOrdenadas.forEach(entrega => {
+        if (!entrega.concluida) {
+          total += parseFloat(entrega.valor);
+          contagemPorValor[entrega.valor] = (contagemPorValor[entrega.valor] || 0) + 1;
+        }
+      });
+
+      // Lista detalhada das entregas
+      entregasOrdenadas.forEach((entrega, i) => {
+        doc.setFontSize(12);
+        doc.text(
+          `${i + 1}. Data: ${entrega.data}, Hora: ${entrega.hora}, Valor: R$ ${entrega.valor}, ${entrega.concluida ? 'Concluída' : 'Pendente'}`,
+          10,
+          y
+        );
+        y += 10;
+        if (y > 270) {
+          doc.addPage();
+          y = 20;
+        }
+      });
+
+      y += 10;
+      doc.setFontSize(14);
+      doc.text(`Total das entregas pendentes: R$ ${total.toFixed(2)}`, 10, y);
+
+      y += 10;
+      doc.setFontSize(13);
+      doc.text('Resumo por valor:', 10, y);
+      y += 8;
+
+      Object.keys(contagemPorValor).sort((a, b) => parseFloat(b) - parseFloat(a)).forEach(valor => {
+        doc.text(`${contagemPorValor[valor]} de R$ ${parseFloat(valor).toFixed(2)}`, 10, y);
+        y += 8;
+        if (y > 270) {
+          doc.addPage();
+          y = 20;
+        }
+      });
+
+      doc.save('lista-e-total-entregas.pdf');
     });
   </script>
 
