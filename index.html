@@ -4,11 +4,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="icone/icon-192.png" type="image/png">
   <link rel="stylesheet" href="style.css">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#2196f3">
-  <link rel="icon" href="icone/ChatGPT Image 17 de mai. de 2025, 12_20_16.png" type="image/png">
   <title>Saga List Motoboy</title>
+
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -103,6 +104,39 @@
       document.getElementById('total').textContent = 'Total: R$ ' + total.toFixed(2);
     }
 
+    // Chame aqui para exibir a lista ao carregar a página
+    renderizarEntregas();
+
+    function renderizarEntregas() {
+      entregasDiv.innerHTML = '';
+      entregas.forEach((entrega, index) => {
+        const div = document.createElement('div');
+        div.className = 'entrega' + (entrega.concluida ? ' concluida' : '');
+        div.innerHTML = `
+      <span>
+        Data: ${entrega.data} |
+        Hora: ${entrega.hora} |
+        Valor: R$ ${entrega.valor}
+      </span>
+      <button class="excluir-entrega" data-index="${index}">Excluir</button>
+    `;
+        entregasDiv.appendChild(div);
+      });
+      // Atualiza o total na tela
+      const total = entregas.filter(e => !e.concluida).reduce((acc, e) => acc + parseFloat(e.valor), 0);
+      document.getElementById('total').textContent = 'Total: R$ ' + total.toFixed(2);
+
+      // Adiciona o evento de clique para todos os botões de excluir
+      document.querySelectorAll('.excluir-entrega').forEach(btn => {
+        btn.addEventListener('click', function () {
+          const idx = this.getAttribute('data-index');
+          entregas.splice(idx, 1);
+          salvarEntregas();
+          renderizarEntregas();
+        });
+      });
+    }
+
     form.addEventListener('submit', function (e) {
       e.preventDefault();
 
@@ -129,53 +163,53 @@
   <!-- Botão de instalação PWA -->
   <script>
     renderizarHistoricoMensal();
-   function renderizarHistoricoMensal() {
-  const historicoDiv = document.getElementById('historicoMensal');
-  if (!historicoDiv) return;
+    function renderizarHistoricoMensal() {
+      const historicoDiv = document.getElementById('historicoMensal');
+      if (!historicoDiv) return;
 
-  // Agrupa entregas por mês/ano
-  const agrupado = {};
-  entregas.forEach(entrega => {
-    const [dia, mes, ano] = entrega.data.split('/');
-    const chave = `${mes}/${ano}`;
-    if (!agrupado[chave]) agrupado[chave] = [];
-    agrupado[chave].push(entrega);
-  });
+      // Agrupa entregas por mês/ano
+      const agrupado = {};
+      entregas.forEach(entrega => {
+        const [dia, mes, ano] = entrega.data.split('/');
+        const chave = `${mes}/${ano}`;
+        if (!agrupado[chave]) agrupado[chave] = [];
+        agrupado[chave].push(entrega);
+      });
 
-  let html = '<h2>Histórico Mensal</h2>';
-  Object.keys(agrupado).sort((a, b) => {
-    // Ordena do mais recente para o mais antigo
-    const [mA, yA] = a.split('/').map(Number);
-    const [mB, yB] = b.split('/').map(Number);
-    return yB - yA || mB - mA;
-  }).forEach(mesAno => {
-    const lista = agrupado[mesAno];
-    const totalMes = lista.reduce((acc, e) => acc + parseFloat(e.valor), 0);
-    html += `<div style="margin-bottom:15px;">
+      let html = '<h2>Histórico Mensal</h2>';
+      Object.keys(agrupado).sort((a, b) => {
+        // Ordena do mais recente para o mais antigo
+        const [mA, yA] = a.split('/').map(Number);
+        const [mB, yB] = b.split('/').map(Number);
+        return yB - yA || mB - mA;
+      }).forEach(mesAno => {
+        const lista = agrupado[mesAno];
+        const totalMes = lista.reduce((acc, e) => acc + parseFloat(e.valor), 0);
+        html += `<div style="margin-bottom:15px;">
       <strong>${mesAno}</strong> - Total: R$ ${totalMes.toFixed(2)}
       <ul style="margin:5px 0 0 15px;">` +
-      lista.map(e => `<li>Dia ${e.data.split('/')[0]} - Valor: R$ ${e.valor}</li>`).join('') +
-      `</ul>
+          lista.map(e => `<li>Dia ${e.data.split('/')[0]} - Valor: R$ ${e.valor}</li>`).join('') +
+          `</ul>
     </div>`;
-  });
+      });
 
-  historicoDiv.innerHTML = html;
-}
+      historicoDiv.innerHTML = html;
+    }
 
-// Listener do botão FORA da função!
-document.getElementById('mostrarHistorico').addEventListener('click', function () {
-  const historicoDiv = document.getElementById('historicoMensal');
-  if (historicoDiv.style.display === 'none') {
-    renderizarHistoricoMensal(); // Sempre atualiza ao mostrar!
-    historicoDiv.style.display = 'block';
-    this.textContent = 'Ocultar Histórico Mensal';
-  } else {
-    historicoDiv.style.display = 'none';
-    this.textContent = 'Mostrar Histórico Mensal';
-  }
-});
+    // Listener do botão FORA da função!
+    document.getElementById('mostrarHistorico').addEventListener('click', function () {
+      const historicoDiv = document.getElementById('historicoMensal');
+      if (historicoDiv.style.display === 'none') {
+        renderizarHistoricoMensal(); // Sempre atualiza ao mostrar!
+        historicoDiv.style.display = 'block';
+        this.textContent = 'Ocultar Histórico Mensal';
+      } else {
+        historicoDiv.style.display = 'none';
+        this.textContent = 'Mostrar Histórico Mensal';
+      }
+    });
 
-   
+
     let deferredPrompt;
     const instalarBtn = document.createElement('button');
     instalarBtn.textContent = 'Baixar App';

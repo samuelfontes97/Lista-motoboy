@@ -1,23 +1,16 @@
 body {
   font-family: Arial, sans-serif;
-  color: #000000;
-  font-weight: bold;
-  background-color: #f6f6fa;
-  margin: 0;
-  padding: 0;
-  background-image: url('icone/ChatGPT Image 17 de mai. de 2025, 12_20_16.png');
+  padding: 20px;
+ background-image: url('images/fundo.jpg');
   background-size: cover;
-  background-position: center center; /* centraliza horizontal e vertical */
+  background-position: center;
   background-repeat: no-repeat;
-  background-attachment: fixed;
-  min-height: 100vh; /* garante altura mínima da tela */
 }
 
 .container {
   max-width: 600px;
   margin: 2rem auto;
   padding: 2rem;
-  background: white;
   border-radius: 10px;
   box-shadow: 0 10px 5px rgba(0, 0, 0, 0.1);
 }
@@ -96,15 +89,17 @@ form button {
 .entrega {
   text-align: center;
   width: 100%;
-  max-width: 400px; /* ajuste conforme desejar */
+  max-width: 400px;
+  /* ajuste conforme desejar */
 }
+
 .entrega button {
   align-self: flex-end;
 }
 
 @media (min-width: 600px) {
   form {
-   
+
     align-items: center;
   }
 
@@ -115,12 +110,31 @@ form button {
 
   .entrega {
     display: flex;
-    jflex-direction:row;
+    flex-direction: row;
+    justify-content: space-between;
     align-items: center;
+    /* ...restante do seu código... */
+  }
+
+  .entrega span {
+    flex: 1;
+    text-align: left;
   }
 
   .entrega button {
-    align-self: auto;
+    background-color: #e53935;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 16px;
+    margin-top: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background 0.2s;
+  }
+
+  .entrega button:hover {
+    background-color: #b71c1c;
   }
 }
 
